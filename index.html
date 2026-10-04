@@ -584,7 +584,7 @@
         throw new Error(`GitHub API chyba: ${getRes.status}`);
       }
     } catch (e) {
-      throw new Error('Nelze ověřit existující soubor: ' + e.message);
+      throw new Error(`Nelze ověřit existující soubor (repo: ${REPO}, cesta: ${path}): ` + e.message);
     }
 
     const body = { message: message, content: btoa(unescape(encodeURIComponent(content))), branch: BRANCH };
@@ -597,8 +597,8 @@
     });
 
     if (!putRes.ok) {
-      const err = await putRes.json();
-      throw new Error(err.message || 'Chyba při ukládání.');
+      const err = await putRes.json().catch(() => ({}));
+      throw new Error(`${err.message || 'Chyba při ukládání'} (repo: ${REPO}, cesta: ${path}, status: ${putRes.status})`);
     }
   }
 
@@ -945,8 +945,8 @@
     });
 
     if (!putRes.ok) {
-      const err = await putRes.json();
-      throw new Error(err.message || 'Nahrání selhalo');
+      const err = await putRes.json().catch(() => ({}));
+      throw new Error(`${err.message || 'Nahrání selhalo'} (repo: ${REPO}, cesta: ${path}, status: ${putRes.status})`);
     }
     return `/${path}`;
   }
