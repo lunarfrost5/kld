@@ -26,9 +26,7 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; }
 
-  /* Fixed backdrop as its own layer instead of background-attachment:fixed on
-     body - that property is unreliable on iOS Safari (can scroll, jitter, or
-     just not apply), this pattern renders correctly everywhere. */
+
   body::before {
     content: '';
     position: fixed;
@@ -48,10 +46,7 @@
     justify-content: center;
     padding: 24px;
   }
-  /* Lock screen is short, so centering it looks intentional. Once unlocked,
-     content can be long (lots of text/photos) - top-aligning it means the
-     page scrolls normally from the top instead of opening "scrolled to the
-     middle" the way a centered flex item taller than the viewport would. */
+
   body.locked { align-items: center; overflow: hidden; }
 
   .hidden { display: none !important; }
@@ -170,8 +165,6 @@
 
   #text-column { grid-area: center; min-width: 0; }
 
-  /* Archive tabs: small pills above the heading, one per card. Width follows
-     content (no fixed width) and text is centered via inline-flex. */
   #card-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -257,9 +250,6 @@
 
   #empty-note { color: var(--ink-soft); font-style: italic; font-size: 0.95rem; }
 
-  /* Photo bars: stretched by the grid to match the text column's height
-     (#page uses align-items: stretch), then space-between spreads the
-     polaroids from top to bottom instead of clumping at the top. */
   .photo-bar {
     grid-row: auto;
     min-width: 0;
@@ -343,8 +333,6 @@
   }
   .theme-swatch.active { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink), 0 2px 6px rgba(0,0,0,0.25); }
 
-  /* Tablets / large phones: collapse the 3-column layout to one column so
-     nothing gets squeezed. Photos flow below the text in a wrapped row. */
   @media (max-width: 860px) {
     body:not(.locked) { padding: 16px; }
     #page {
@@ -458,7 +446,7 @@
   const SALT = 'ministranka-salt-9f2';
   const MAX_DIM = 1600;
   const JPEG_QUALITY = 0.8;
-  const REPO = 'TVOJE_JMENO/TVOJE_REPO'; // <-- DOPLŇ svůj skutečný, už opravený repozitář (owner/repo)
+  const REPO = 'lunarfrost5/kld';
   const BRANCH = 'main';
 
   let state = {
@@ -480,8 +468,7 @@
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Cache-busted: without this, browsers/CDN can keep serving the old
-  // content.json after a save, so the viewer doesn't see fresh edits.
+
   function noCacheUrl(path) {
     return path + '?t=' + Date.now();
   }
@@ -508,9 +495,7 @@
     return { theme: 'purple', cards: [{ id: genId(), name: 'Hlavní', title: 'Vítejte', text: '', photos: [] }] };
   }
 
-  // Accepts either the new { theme, cards: [...] } shape or the older flat
-  // { title, text, photos, theme } shape and always returns the new shape,
-  // so existing content.json files keep working without any manual migration.
+
   function migrateContent(data) {
     if (data && Array.isArray(data.cards) && data.cards.length > 0) {
       data.cards.forEach(c => {
@@ -622,14 +607,14 @@
   function photoStyle(url) {
     const rotHash = hashStr(url + 'r');
     const sign = (rotHash % 2 === 0) ? 1 : -1;
-    const magnitude = 2 + ((rotHash % 1000) / 1000) * 5; // 2..7 degrees, always visibly tilted
+    const magnitude = 2 + ((rotHash % 1000) / 1000) * 5; 
     const rot = sign * magnitude;
     const shift = (window.innerWidth <= 860) ? 0 : ((hashStr(url + 's') % 1000) / 1000) * 22 - 11;
     const big = (hashStr(url + 'z') % 2) === 0;
     return { rot, shift, big };
   }
 
-  // Curated colour palettes the admin can switch between without touching code.
+
   const THEMES = {
     purple:     { label: 'Fialová',        bg1: '#3D2A5C', bg2: '#1B1129', paper: '#FAF7FC', paperDeep: '#E2D4F0', ink: '#2A2138', inkSoft: '#7B7089', accent: '#7C4DA6', accentDeep: '#5C3980', danger: '#A34A72' },
     emerald:    { label: 'Smaragdová',     bg1: '#1F4A3D', bg2: '#0E2620', paper: '#F6F8F3', paperDeep: '#DCE8D8', ink: '#1E2B24', inkSoft: '#6E7C71', accent: '#2F8F63', accentDeep: '#226B49', danger: '#B25444' },
@@ -680,8 +665,7 @@
   function switchCard(id) {
     if (id === state.activeCardId) return;
     if (state.role === 'admin') {
-      // capture any unsaved edits on the card being left, so flipping tabs
-      // doesn't silently discard text typed before clicking "Uložit změny"
+
       const current = getActiveCard();
       if (current) {
         current.title = $('site-title').value;
