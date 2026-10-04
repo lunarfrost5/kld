@@ -6,7 +6,7 @@
 <title>Žulidlo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Abril+Fatface&family=Alegreya:wght@500;700&family=Baskervville&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg-1: #3D2A5C;
@@ -21,11 +21,11 @@
     --radius: 16px;
     --serif: 'Fraunces', Georgia, serif;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --hand: 'Caveat', cursive;
   }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; }
-
 
   body::before {
     content: '';
@@ -134,7 +134,7 @@
       "left center right";
     column-gap: 26px;
     row-gap: 10px;
-    align-items: stretch;
+    align-items: start;
   }
 
   @keyframes rise {
@@ -171,8 +171,9 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 18px;
+    min-width: 0;
   }
-  .card-tab-wrap { position: relative; display: inline-flex; }
+  .card-tab-wrap { position: relative; display: inline-flex; max-width: 100%; min-width: 0; }
   .card-tab {
     display: inline-flex;
     align-items: center;
@@ -186,6 +187,9 @@
     font-weight: 600;
     white-space: nowrap;
     text-align: center;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .card-tab:hover { border-color: var(--accent); color: var(--accent-deep); }
   .card-tab.active {
@@ -199,6 +203,7 @@
     background: transparent;
     font-size: 0.82rem;
     padding: 7px 14px;
+    white-space: nowrap;
   }
   .card-tab-add:hover { border-color: var(--accent); color: var(--accent-deep); }
   .card-tab-delete {
@@ -251,12 +256,10 @@
   #empty-note { color: var(--ink-soft); font-style: italic; font-size: 0.95rem; }
 
   .photo-bar {
-    grid-row: auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
     gap: 26px;
     padding-top: 6px;
   }
@@ -266,15 +269,17 @@
   .polaroid {
     --rot: 0deg;
     --shift: 0px;
-    width: 110px;
+    width: 112px;
     background: #fff;
-    padding: 7px 7px 24px;
+    padding: 8px 8px 4px;
     box-shadow: 0 14px 26px rgba(20,10,30,0.35), 0 3px 8px rgba(20,10,30,0.2);
     position: relative;
+    display: flex;
+    flex-direction: column;
     transform: rotate(var(--rot)) translateX(var(--shift));
     transition: transform 0.2s ease;
   }
-  .polaroid.big { width: 130px; }
+  .polaroid.big { width: 136px; }
   .polaroid:hover {
     --rot: 0deg;
     --shift: 0px;
@@ -282,8 +287,34 @@
     z-index: 5;
   }
 
-  .polaroid .photo-inner { width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--paper-deep); }
+  .polaroid .photo-inner { width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--paper-deep); flex-shrink: 0; }
   .polaroid img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; display: block; }
+
+  .polaroid-caption {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 3px 3px 5px;
+    font-family: var(--hand);
+    font-size: 1.2rem;
+    line-height: 1.1;
+    text-align: center;
+    color: var(--ink);
+    outline: none;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    cursor: default;
+  }
+  .polaroid-caption[contenteditable="true"] { cursor: text; }
+  .polaroid-caption:empty::before {
+    content: attr(data-placeholder);
+    color: var(--ink-soft);
+    opacity: 0.55;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+  }
 
   .photo-delete {
     position: absolute;
@@ -303,6 +334,7 @@
     box-shadow: 0 3px 8px rgba(0,0,0,0.3);
     cursor: pointer;
     transform: rotate(calc(-1 * var(--rot)));
+    z-index: 2;
   }
 
   #lightbox {
@@ -311,7 +343,34 @@
     display: flex; align-items: center; justify-content: center;
     z-index: 100; padding: 30px; cursor: zoom-out;
   }
-  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 4px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .lightbox-polaroid {
+    background: #fff;
+    padding: 16px 16px 10px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+    max-width: min(90vw, 640px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+  }
+  .lightbox-photo-inner {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .lightbox-photo-inner img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .lightbox-caption {
+    font-family: var(--hand);
+    font-size: 1.7rem;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--ink);
+    padding: 10px 6px 4px;
+    min-height: 2rem;
+  }
 
   #admin-controls { margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--paper-deep); }
   #save-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -323,7 +382,8 @@
   details summary:hover { color: var(--accent-deep); }
   #token-status { font-size: 0.8rem; margin-top: 6px; color: var(--ink-soft); }
 
-  .theme-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .appearance-label { margin: 14px 0 0; font-size: 0.78rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .theme-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
   .theme-swatch {
     width: 34px; height: 34px; border-radius: 50%;
     border: none; padding: 0; cursor: pointer;
@@ -332,6 +392,18 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
   .theme-swatch.active { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink), 0 2px 6px rgba(0,0,0,0.25); }
+
+  .font-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .font-swatch {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--paper-deep);
+    background: #FDFBFE;
+    color: var(--ink);
+    font-size: 1.05rem;
+    cursor: pointer;
+  }
+  .font-swatch.active { border-color: var(--accent); background: var(--accent); color: #fff; }
 
   @media (max-width: 860px) {
     body:not(.locked) { padding: 16px; }
@@ -344,7 +416,6 @@
     #site-title { font-size: 1.9rem; }
   }
 
-  /* Phones */
   @media (max-width: 480px) {
     body:not(.locked) { padding: 10px; }
     #lock-screen { padding: 40px 22px 32px; max-width: 100%; }
@@ -352,14 +423,17 @@
     #site-title { font-size: 1.55rem; margin-left: -6px; width: calc(100% + 12px); padding: 4px 6px; }
     #site-text, textarea#edit-text { font-size: 1rem; }
     .photo-bar { gap: 14px; }
-    .polaroid { width: 92px; padding: 6px 6px 22px; }
-    .polaroid.big { width: 112px; }
+    .polaroid { width: 96px; padding: 7px 7px 3px; }
+    .polaroid.big { width: 118px; }
+    .polaroid-caption { font-size: 1.05rem; min-height: 26px; }
     .photo-delete { width: 28px; height: 28px; font-size: 16px; top: -9px; right: -9px; }
+    #lightbox { padding: 16px; }
+    .lightbox-caption { font-size: 1.4rem; }
     #save-row { flex-direction: column; align-items: stretch; gap: 10px; }
     .btn-inline { width: 100%; }
     .pw-row { flex-direction: column; }
     .pw-row input { min-width: 0; width: 100%; }
-    .card-tab { padding: 6px 13px; font-size: 0.78rem; }
+    .card-tab { max-width: 110px; padding: 6px 13px; font-size: 0.78rem; }
     .card-tab-add { padding: 6px 12px; font-size: 0.78rem; }
     .card-tab-delete { width: 18px; height: 18px; font-size: 11px; top: -6px; right: -6px; }
   }
@@ -371,6 +445,24 @@
     }
   }
 </style>
+<script>
+  // Applies the last-saved colours/font from this browser's cache before
+  // anything paints, so repeat visits never flash the default purple while
+  // content.json is still loading. The real fetch (below, in the main
+  // script) re-applies and refreshes this cache once it resolves.
+  (function() {
+    try {
+      var cached = localStorage.getItem('zulidlo_appearance');
+      if (cached) {
+        var vars = JSON.parse(cached);
+        var style = document.documentElement.style;
+        Object.keys(vars).forEach(function(k) {
+          if (vars[k]) style.setProperty(k, vars[k]);
+        });
+      }
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body class="locked">
 
@@ -406,8 +498,11 @@
         </div>
 
         <details>
-          <summary>Změnit barvy</summary>
+          <summary>Vzhled stránky</summary>
+          <p class="appearance-label">Barva</p>
           <div class="theme-row" id="theme-row"></div>
+          <p class="appearance-label">Font nadpisu</p>
+          <div class="font-row" id="font-row"></div>
         </details>
 
         <details>
@@ -438,7 +533,10 @@
 </div>
 
 <div id="lightbox" class="hidden">
-  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-polaroid">
+    <div class="lightbox-photo-inner"><img id="lightbox-img" src="" alt=""></div>
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
 </div>
 
 <script>
@@ -452,7 +550,7 @@
   let state = {
     role: null,
     passwords: null,
-    content: { theme: 'purple', cards: [] },
+    content: { theme: 'purple', font: 'fraunces', cards: [] },
     activeCardId: null,
     githubToken: null
   };
@@ -468,14 +566,9 @@
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
+  function noCacheUrl(path) { return path + '?t=' + Date.now(); }
 
-  function noCacheUrl(path) {
-    return path + '?t=' + Date.now();
-  }
-
-  function genId() {
-    return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  }
+  function genId() { return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
   function makeCard(name) {
     const n = (name || '').trim() || 'Nová karta';
@@ -485,16 +578,16 @@
   function normalizePhotos(photos) {
     if (!Array.isArray(photos)) return [];
     return photos.map(item => {
-      if (typeof item === 'string') return item;
-      if (item && item.photo) return item.photo;
+      if (typeof item === 'string') return { url: item, caption: '' };
+      if (item && typeof item === 'object' && item.url) return { url: item.url, caption: item.caption || '' };
+      if (item && item.photo) return { url: item.photo, caption: '' };
       return null;
     }).filter(Boolean);
   }
 
   function defaultContent() {
-    return { theme: 'purple', cards: [{ id: genId(), name: 'Hlavní', title: 'Vítejte', text: '', photos: [] }] };
+    return { theme: 'purple', font: 'fraunces', cards: [{ id: genId(), name: 'Hlavní', title: 'Vítejte', text: '', photos: [] }] };
   }
-
 
   function migrateContent(data) {
     if (data && Array.isArray(data.cards) && data.cards.length > 0) {
@@ -505,7 +598,7 @@
         if (typeof c.text !== 'string') c.text = '';
         c.photos = normalizePhotos(c.photos);
       });
-      return { theme: data.theme || 'purple', cards: data.cards };
+      return { theme: data.theme || 'purple', font: data.font || 'fraunces', cards: data.cards };
     }
     const existingTitle = (data && typeof data.title === 'string' && data.title.trim()) ? data.title.trim() : '';
     const card = {
@@ -515,7 +608,7 @@
       text: (data && data.text) || '',
       photos: normalizePhotos(data && data.photos)
     };
-    return { theme: (data && data.theme) || 'purple', cards: [card] };
+    return { theme: (data && data.theme) || 'purple', font: (data && data.font) || 'fraunces', cards: [card] };
   }
 
   async function loadPasswords() {
@@ -587,11 +680,14 @@
     }
   }
 
-  function openLightbox(src) {
-    $('lightbox-img').src = src;
+  function openLightbox(url, caption) {
+    $('lightbox-img').src = url;
+    $('lightbox-caption').textContent = caption || '';
     $('lightbox').classList.remove('hidden');
   }
-  $('lightbox').addEventListener('click', () => $('lightbox').classList.add('hidden'));
+  $('lightbox').addEventListener('click', (e) => {
+    if (e.target === $('lightbox')) $('lightbox').classList.add('hidden');
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') $('lightbox').classList.add('hidden');
   });
@@ -607,13 +703,12 @@
   function photoStyle(url) {
     const rotHash = hashStr(url + 'r');
     const sign = (rotHash % 2 === 0) ? 1 : -1;
-    const magnitude = 2 + ((rotHash % 1000) / 1000) * 5; 
+    const magnitude = 2 + ((rotHash % 1000) / 1000) * 5;
     const rot = sign * magnitude;
     const shift = (window.innerWidth <= 860) ? 0 : ((hashStr(url + 's') % 1000) / 1000) * 22 - 11;
     const big = (hashStr(url + 'z') % 2) === 0;
     return { rot, shift, big };
   }
-
 
   const THEMES = {
     purple:     { label: 'Fialová',        bg1: '#3D2A5C', bg2: '#1B1129', paper: '#FAF7FC', paperDeep: '#E2D4F0', ink: '#2A2138', inkSoft: '#7B7089', accent: '#7C4DA6', accentDeep: '#5C3980', danger: '#A34A72' },
@@ -622,6 +717,26 @@
     terracotta: { label: 'Terakota',       bg1: '#5C3A2A', bg2: '#2B1810', paper: '#FBF3E9', paperDeep: '#EAD9C2', ink: '#3A2A1E', inkSoft: '#8A7259', accent: '#B4623E', accentDeep: '#8F4B2E', danger: '#A3454A' },
     rose:       { label: 'Růžová',         bg1: '#5C2A44', bg2: '#2B0F1F', paper: '#FDF5F7', paperDeep: '#EFD7E0', ink: '#3A1E2A', inkSoft: '#8A6E78', accent: '#B14A72', accentDeep: '#8C3759', danger: '#A34A4A' }
   };
+
+  const FONTS = {
+    fraunces:   { label: 'Fraunces',      family: "'Fraunces', Georgia, serif" },
+    abril:      { label: 'Abril Fatface', family: "'Abril Fatface', Georgia, serif" },
+    alegreya:   { label: 'Alegreya',      family: "'Alegreya', Georgia, serif" },
+    baskerville:{ label: 'Baskervville',  family: "'Baskervville', Georgia, serif" }
+  };
+
+  // Snapshots whatever is currently applied to :root so the next page load
+  // can repaint instantly from cache instead of flashing the default theme
+  // while content.json is still being fetched.
+  function cacheAppearance() {
+    try {
+      const vars = ['--bg-1','--bg-2','--paper','--paper-deep','--ink','--ink-soft','--accent','--accent-deep','--danger','--serif'];
+      const style = document.documentElement.style;
+      const snapshot = {};
+      vars.forEach(v => { snapshot[v] = style.getPropertyValue(v); });
+      localStorage.setItem('zulidlo_appearance', JSON.stringify(snapshot));
+    } catch (e) {}
+  }
 
   function applyTheme(key) {
     const t = THEMES[key] || THEMES.purple;
@@ -635,6 +750,13 @@
     root.setProperty('--accent', t.accent);
     root.setProperty('--accent-deep', t.accentDeep);
     root.setProperty('--danger', t.danger);
+    cacheAppearance();
+  }
+
+  function applyFont(key) {
+    const f = FONTS[key] || FONTS.fraunces;
+    document.documentElement.style.setProperty('--serif', f.family);
+    cacheAppearance();
   }
 
   function renderThemeSwatches() {
@@ -660,12 +782,32 @@
     });
   }
 
+  function renderFontSwatches() {
+    const row = $('font-row');
+    if (!row) return;
+    row.innerHTML = '';
+    const active = state.content.font || 'fraunces';
+    Object.keys(FONTS).forEach((key) => {
+      const f = FONTS[key];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'font-swatch' + (key === active ? ' active' : '');
+      btn.style.fontFamily = f.family;
+      btn.textContent = f.label;
+      btn.addEventListener('click', () => {
+        state.content.font = key;
+        applyFont(key);
+        renderFontSwatches();
+      });
+      row.appendChild(btn);
+    });
+  }
+
   // ---- Archive / cards ----
 
   function switchCard(id) {
     if (id === state.activeCardId) return;
     if (state.role === 'admin') {
-
       const current = getActiveCard();
       if (current) {
         current.title = $('site-title').value;
@@ -695,17 +837,12 @@
   }
 
   function deleteCard(id) {
-    if (state.content.cards.length <= 1) {
-      alert('Poslední kartu nelze smazat.');
-      return;
-    }
+    if (state.content.cards.length <= 1) { alert('Poslední kartu nelze smazat.'); return; }
     const card = state.content.cards.find(c => c.id === id);
     if (!card) return;
     if (!confirm(`Opravdu smazat kartu „${card.name}“ i s jejím textem a fotkami (po uložení)?`)) return;
     state.content.cards = state.content.cards.filter(c => c.id !== id);
-    if (state.activeCardId === id) {
-      state.activeCardId = state.content.cards[0].id;
-    }
+    if (state.activeCardId === id) state.activeCardId = state.content.cards[0].id;
     renderContent();
   }
 
@@ -726,10 +863,11 @@
       btn.type = 'button';
       btn.className = 'card-tab' + (card.id === state.activeCardId ? ' active' : '');
       btn.textContent = card.name || 'Karta';
+      btn.title = card.name || 'Karta';
       btn.setAttribute('aria-pressed', card.id === state.activeCardId ? 'true' : 'false');
       btn.addEventListener('click', () => switchCard(card.id));
       if (state.role === 'admin') {
-        btn.title = 'Klik = zobrazit, dvojklik = přejmenovat';
+        btn.title = (card.name || 'Karta') + ' — dvojklik přejmenuje';
         btn.addEventListener('dblclick', () => renameCard(card.id));
       }
       wrap.appendChild(btn);
@@ -744,7 +882,6 @@
         delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteCard(card.id); });
         wrap.appendChild(delBtn);
       }
-
       bar.appendChild(wrap);
     });
 
@@ -775,9 +912,9 @@
     rightBar.innerHTML = '';
     const card = getActiveCard();
 
-    card.photos.forEach((url, index) => {
-      if (!url) return;
-      const style = photoStyle(url);
+    card.photos.forEach((photo, index) => {
+      if (!photo || !photo.url) return;
+      const style = photoStyle(photo.url);
       const item = document.createElement('div');
       item.className = 'polaroid' + (style.big ? ' big' : '');
       item.style.setProperty('--rot', style.rot.toFixed(2) + 'deg');
@@ -786,12 +923,25 @@
       const inner = document.createElement('div');
       inner.className = 'photo-inner';
       const img = document.createElement('img');
-      img.src = url;
-      img.alt = 'fotka';
+      img.src = photo.url;
+      img.alt = photo.caption || 'fotka';
       img.loading = 'lazy';
-      img.addEventListener('click', () => openLightbox(url));
+      img.addEventListener('click', () => openLightbox(photo.url, photo.caption));
       inner.appendChild(img);
       item.appendChild(inner);
+
+      const caption = document.createElement('div');
+      caption.className = 'polaroid-caption';
+      caption.textContent = photo.caption || '';
+      if (state.role === 'admin') {
+        caption.contentEditable = 'true';
+        caption.setAttribute('data-placeholder', 'popisek…');
+        caption.addEventListener('blur', () => { photo.caption = caption.textContent.trim(); });
+        caption.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); caption.blur(); }
+        });
+      }
+      item.appendChild(caption);
 
       if (state.role === 'admin') {
         const delBtn = document.createElement('button');
@@ -829,13 +979,8 @@
         URL.revokeObjectURL(url);
         let { width, height } = img;
         if (width > MAX_DIM || height > MAX_DIM) {
-          if (width > height) {
-            height = Math.round(height * MAX_DIM / width);
-            width = MAX_DIM;
-          } else {
-            width = Math.round(width * MAX_DIM / height);
-            height = MAX_DIM;
-          }
+          if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+          else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
         }
         const canvas = document.createElement('canvas');
         canvas.width = width;
@@ -880,18 +1025,15 @@
     const newAdmin = $('new-admin-pass').value;
     const newView = $('new-view-pass').value;
     const status = $('pw-status');
-
     if (!newAdmin && !newView) {
       status.textContent = 'Vyplňte alespoň jedno heslo.';
       status.style.color = 'var(--danger)';
       return;
     }
-
     const passwords = {
       adminHash: newAdmin ? await sha256(newAdmin) : state.passwords.adminHash,
       viewHash: newView ? await sha256(newView) : state.passwords.viewHash
     };
-
     const json = JSON.stringify(passwords, null, 2);
     try {
       await saveToGitHub('passwords.json', json, 'Aktualizace hesel');
@@ -910,24 +1052,17 @@
   async function uploadPhoto(file) {
     const token = state.githubToken || getToken();
     if (!token) throw new Error('Chybí GitHub token.');
-
-    // resizeAndCompress always re-encodes as JPEG, so the extension must
-    // match regardless of what the original file was.
     const randName = crypto.randomUUID() + '.jpg';
     const path = `images/uploads/${randName}`;
-
     const dataUrl = await resizeAndCompress(file);
     const base64Content = dataUrl.split(',')[1];
-
     const apiUrl = `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`;
     const body = { message: 'Nahrání fotky ' + randName, content: base64Content, branch: BRANCH };
-
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-
     if (!putRes.ok) {
       const err = await putRes.json().catch(() => ({}));
       throw new Error(`${err.message || 'Nahrání selhalo'} (repo: ${REPO}, cesta: ${path}, status: ${putRes.status})`);
@@ -949,7 +1084,7 @@
       const card = getActiveCard();
       for (const file of files) {
         const imageUrl = await uploadPhoto(file);
-        card.photos.push(imageUrl);
+        card.photos.push({ url: imageUrl, caption: '' });
       }
       status.textContent = 'Fotky nahrány - nezapomeňte Uložit změny ✓';
       renderPhotos();
@@ -984,6 +1119,7 @@
       $('edit-text').classList.remove('hidden');
       $('admin-controls').classList.remove('hidden');
       renderThemeSwatches();
+      renderFontSwatches();
       renderCardTabs();
     } else {
       $('role-badge').classList.add('hidden');
@@ -1036,11 +1172,10 @@
     $('lock-screen').classList.remove('hidden');
     $('password-input').focus();
 
-    // Fetch in the background so the password screen appears instantly, but
-    // apply the saved colour theme as soon as it arrives (even pre-login) so
-    // the very first thing anyone sees already looks right. Actual content
-    // (title/text/photos) still only renders after a correct password.
-    contentPromise = loadContent().then(() => applyTheme(state.content.theme));
+    contentPromise = loadContent().then(() => {
+      applyTheme(state.content.theme);
+      applyFont(state.content.font);
+    });
     passwordsPromise = loadPasswords();
 
     state.githubToken = getToken();
