@@ -139,7 +139,7 @@
       "left center right";
     column-gap: 26px;
     row-gap: 10px;
-    align-items: start;
+    align-items: stretch;
   }
 
   @keyframes rise {
@@ -169,6 +169,62 @@
   }
 
   #text-column { grid-area: center; min-width: 0; }
+
+  /* Archive tabs: small pills above the heading, one per card. Width follows
+     content (no fixed width) and text is centered via inline-flex. */
+  #card-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .card-tab-wrap { position: relative; display: inline-flex; }
+  .card-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--paper-deep);
+    background: #FDFBFE;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .card-tab:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .card-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .card-tab-add {
+    border-style: dashed;
+    color: var(--ink-soft);
+    background: transparent;
+    font-size: 0.82rem;
+    padding: 7px 14px;
+  }
+  .card-tab-add:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .card-tab-delete {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
 
   #site-title {
     font-family: var(--serif);
@@ -201,16 +257,16 @@
 
   #empty-note { color: var(--ink-soft); font-style: italic; font-size: 0.95rem; }
 
-  /* Photo bars: simple flex columns sized to their own content. (An earlier
-     version stretched these to match the text column's height and clipped
-     overflow, which is what was cutting off the shadows and could hide
-     photos entirely when the text got long - a tall, empty, clipped bar.) */
+  /* Photo bars: stretched by the grid to match the text column's height
+     (#page uses align-items: stretch), then space-between spreads the
+     polaroids from top to bottom instead of clumping at the top. */
   .photo-bar {
     grid-row: auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     gap: 26px;
     padding-top: 6px;
   }
@@ -315,6 +371,9 @@
     .btn-inline { width: 100%; }
     .pw-row { flex-direction: column; }
     .pw-row input { min-width: 0; width: 100%; }
+    .card-tab { padding: 6px 13px; font-size: 0.78rem; }
+    .card-tab-add { padding: 6px 12px; font-size: 0.78rem; }
+    .card-tab-delete { width: 18px; height: 18px; font-size: 11px; top: -6px; right: -6px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -344,6 +403,7 @@
     <div class="photo-bar" id="photo-bar-left"></div>
 
     <div id="text-column">
+      <div id="card-tabs"></div>
       <input id="site-title" type="text" readonly>
       <div id="site-text"></div>
       <textarea id="edit-text" class="hidden" placeholder="Sem napište text stránky…"></textarea>
@@ -398,13 +458,14 @@
   const SALT = 'ministranka-salt-9f2';
   const MAX_DIM = 1600;
   const JPEG_QUALITY = 0.8;
-  const REPO = 'lunarfrost5/kld';
+  const REPO = 'TVOJE_JMENO/TVOJE_REPO'; // <-- DOPLŇ svůj skutečný, už opravený repozitář (owner/repo)
   const BRANCH = 'main';
 
   let state = {
     role: null,
     passwords: null,
-    content: { title: '', text: '', photos: [], theme: 'purple' },
+    content: { theme: 'purple', cards: [] },
+    activeCardId: null,
     githubToken: null
   };
 
@@ -425,6 +486,53 @@
     return path + '?t=' + Date.now();
   }
 
+  function genId() {
+    return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function makeCard(name) {
+    const n = (name || '').trim() || 'Nová karta';
+    return { id: genId(), name: n, title: n, text: '', photos: [] };
+  }
+
+  function normalizePhotos(photos) {
+    if (!Array.isArray(photos)) return [];
+    return photos.map(item => {
+      if (typeof item === 'string') return item;
+      if (item && item.photo) return item.photo;
+      return null;
+    }).filter(Boolean);
+  }
+
+  function defaultContent() {
+    return { theme: 'purple', cards: [{ id: genId(), name: 'Hlavní', title: 'Vítejte', text: '', photos: [] }] };
+  }
+
+  // Accepts either the new { theme, cards: [...] } shape or the older flat
+  // { title, text, photos, theme } shape and always returns the new shape,
+  // so existing content.json files keep working without any manual migration.
+  function migrateContent(data) {
+    if (data && Array.isArray(data.cards) && data.cards.length > 0) {
+      data.cards.forEach(c => {
+        if (!c.id) c.id = genId();
+        if (typeof c.name !== 'string' || !c.name) c.name = 'Karta';
+        if (typeof c.title !== 'string') c.title = '';
+        if (typeof c.text !== 'string') c.text = '';
+        c.photos = normalizePhotos(c.photos);
+      });
+      return { theme: data.theme || 'purple', cards: data.cards };
+    }
+    const existingTitle = (data && typeof data.title === 'string' && data.title.trim()) ? data.title.trim() : '';
+    const card = {
+      id: genId(),
+      name: existingTitle || 'Hlavní',
+      title: (data && data.title) || '',
+      text: (data && data.text) || '',
+      photos: normalizePhotos(data && data.photos)
+    };
+    return { theme: (data && data.theme) || 'purple', cards: [card] };
+  }
+
   async function loadPasswords() {
     try {
       const res = await fetch(noCacheUrl('passwords.json'), { cache: 'no-store' });
@@ -441,16 +549,15 @@
       const res = await fetch(noCacheUrl('content.json'), { cache: 'no-store' });
       if (!res.ok) throw new Error('Nelze načíst obsah');
       const data = await res.json();
-      state.content = Object.assign({ title: '', text: '', photos: [], theme: 'purple' }, data);
-      state.content.photos = state.content.photos.map(item => {
-        if (typeof item === 'string') return item;
-        if (item && item.photo) return item.photo;
-        return null;
-      }).filter(Boolean);
+      state.content = migrateContent(data);
     } catch (e) {
       console.error('Chyba načítání obsahu:', e);
-      state.content = { title: 'Vítejte', text: '', photos: [], theme: 'purple' };
+      state.content = defaultContent();
     }
+  }
+
+  function getActiveCard() {
+    return state.content.cards.find(c => c.id === state.activeCardId) || state.content.cards[0];
   }
 
   function getToken() { return localStorage.getItem('github_token'); }
@@ -568,9 +675,111 @@
     });
   }
 
+  // ---- Archive / cards ----
+
+  function switchCard(id) {
+    if (id === state.activeCardId) return;
+    if (state.role === 'admin') {
+      // capture any unsaved edits on the card being left, so flipping tabs
+      // doesn't silently discard text typed before clicking "Uložit změny"
+      const current = getActiveCard();
+      if (current) {
+        current.title = $('site-title').value;
+        current.text = $('edit-text').value;
+      }
+    }
+    state.activeCardId = id;
+    renderContent();
+  }
+
+  function addCard() {
+    const name = prompt('Název nové karty:', 'Nová karta');
+    if (name === null) return;
+    const card = makeCard(name);
+    state.content.cards.push(card);
+    state.activeCardId = card.id;
+    renderContent();
+  }
+
+  function renameCard(id) {
+    const card = state.content.cards.find(c => c.id === id);
+    if (!card) return;
+    const name = prompt('Nový název karty:', card.name);
+    if (name === null) return;
+    card.name = name.trim() || card.name;
+    renderCardTabs();
+  }
+
+  function deleteCard(id) {
+    if (state.content.cards.length <= 1) {
+      alert('Poslední kartu nelze smazat.');
+      return;
+    }
+    const card = state.content.cards.find(c => c.id === id);
+    if (!card) return;
+    if (!confirm(`Opravdu smazat kartu „${card.name}“ i s jejím textem a fotkami (po uložení)?`)) return;
+    state.content.cards = state.content.cards.filter(c => c.id !== id);
+    if (state.activeCardId === id) {
+      state.activeCardId = state.content.cards[0].id;
+    }
+    renderContent();
+  }
+
+  function renderCardTabs() {
+    const bar = $('card-tabs');
+    if (!bar) return;
+    const cards = state.content.cards;
+    const showBar = state.role === 'admin' || cards.length > 1;
+    bar.classList.toggle('hidden', !showBar);
+    if (!showBar) return;
+
+    bar.innerHTML = '';
+    cards.forEach(card => {
+      const wrap = document.createElement('div');
+      wrap.className = 'card-tab-wrap';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'card-tab' + (card.id === state.activeCardId ? ' active' : '');
+      btn.textContent = card.name || 'Karta';
+      btn.setAttribute('aria-pressed', card.id === state.activeCardId ? 'true' : 'false');
+      btn.addEventListener('click', () => switchCard(card.id));
+      if (state.role === 'admin') {
+        btn.title = 'Klik = zobrazit, dvojklik = přejmenovat';
+        btn.addEventListener('dblclick', () => renameCard(card.id));
+      }
+      wrap.appendChild(btn);
+
+      if (state.role === 'admin' && cards.length > 1) {
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'card-tab-delete';
+        delBtn.innerHTML = '&times;';
+        delBtn.title = 'Smazat kartu';
+        delBtn.setAttribute('aria-label', 'Smazat kartu');
+        delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteCard(card.id); });
+        wrap.appendChild(delBtn);
+      }
+
+      bar.appendChild(wrap);
+    });
+
+    if (state.role === 'admin') {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'card-tab-add';
+      addBtn.textContent = '+ Přidat';
+      addBtn.title = 'Přidat kartu';
+      addBtn.addEventListener('click', addCard);
+      bar.appendChild(addBtn);
+    }
+  }
+
+  // ---- Photos ----
+
   function deletePhoto(index) {
     if (confirm('Opravdu smazat tuto fotku?')) {
-      state.content.photos.splice(index, 1);
+      getActiveCard().photos.splice(index, 1);
       renderPhotos();
     }
   }
@@ -580,8 +789,9 @@
     const rightBar = $('photo-bar-right');
     leftBar.innerHTML = '';
     rightBar.innerHTML = '';
+    const card = getActiveCard();
 
-    state.content.photos.forEach((url, index) => {
+    card.photos.forEach((url, index) => {
       if (!url) return;
       const style = photoStyle(url);
       const item = document.createElement('div');
@@ -613,19 +823,21 @@
       (index % 2 === 0 ? leftBar : rightBar).appendChild(item);
     });
 
-    const noPhotos = state.content.photos.length === 0;
-    const noText = !state.content.text || !state.content.text.trim();
+    const noPhotos = card.photos.length === 0;
+    const noText = !card.text || !card.text.trim();
     $('empty-note').classList.toggle('hidden', !(noPhotos && noText));
   }
 
   function renderContent() {
-    $('site-title').value = state.content.title || '';
-    $('site-text').textContent = state.content.text || '';
-    $('edit-text').value = state.content.text || '';
+    const card = getActiveCard();
+    $('site-title').value = card.title || '';
+    $('site-text').textContent = card.text || '';
+    $('edit-text').value = card.text || '';
     renderPhotos();
+    renderCardTabs();
   }
 
-    async function resizeAndCompress(file) {
+  async function resizeAndCompress(file) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
@@ -659,8 +871,9 @@
   async function saveContent() {
     const status = $('save-status');
     const btn = $('save-btn');
-    state.content.title = $('site-title').value;
-    state.content.text = $('edit-text').value;
+    const card = getActiveCard();
+    card.title = $('site-title').value;
+    card.text = $('edit-text').value;
 
     const json = JSON.stringify(state.content, null, 2);
     btn.disabled = true;
@@ -749,9 +962,10 @@
     status.textContent = 'Nahrávám fotky…';
     status.style.color = 'var(--ink-soft)';
     try {
+      const card = getActiveCard();
       for (const file of files) {
         const imageUrl = await uploadPhoto(file);
-        state.content.photos.push(imageUrl);
+        card.photos.push(imageUrl);
       }
       status.textContent = 'Fotky nahrány - nezapomeňte Uložit změny ✓';
       renderPhotos();
@@ -770,6 +984,9 @@
 
   async function enterMain() {
     await contentPromise;
+    if (!state.activeCardId && state.content.cards.length > 0) {
+      state.activeCardId = state.content.cards[0].id;
+    }
     renderContent();
 
     $('lock-screen').classList.add('hidden');
@@ -783,12 +1000,14 @@
       $('edit-text').classList.remove('hidden');
       $('admin-controls').classList.remove('hidden');
       renderThemeSwatches();
+      renderCardTabs();
     } else {
       $('role-badge').classList.add('hidden');
       $('site-title').setAttribute('readonly', 'true');
       $('site-text').classList.remove('hidden');
       $('edit-text').classList.add('hidden');
       $('admin-controls').classList.add('hidden');
+      renderCardTabs();
     }
   }
 
@@ -819,6 +1038,7 @@
 
   $('logout-btn').addEventListener('click', () => {
     state.role = null;
+    state.activeCardId = null;
     $('main-wrap').classList.add('hidden');
     $('lock-screen').classList.remove('hidden');
     $('password-input').value = '';
