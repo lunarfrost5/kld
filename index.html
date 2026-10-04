@@ -9,15 +9,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Abril+Fatface&family=Alegreya:wght@500;700&family=Baskervville&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-1: #3D2A5C;
-    --bg-2: #1B1129;
-    --paper: #FAF7FC;
-    --paper-deep: #E2D4F0;
-    --ink: #2A2138;
-    --ink-soft: #7B7089;
-    --accent: #7C4DA6;
-    --accent-deep: #5C3980;
-    --danger: #A34A72;
+    /* Neutral until JS applies the real (cached or fetched) theme, so an
+       uncached first visit flashes a calm grey instead of a specific wrong
+       colour - see the inline script in <head> and applyTheme() below. */
+    --bg-1: #2E2C2A;
+    --bg-2: #161514;
+    --paper: #F5F3EF;
+    --paper-deep: #E0DCD4;
+    --ink: #272421;
+    --ink-soft: #7A756D;
+    --accent: #73685C;
+    --accent-deep: #574F46;
+    --danger: #A34A4A;
     --radius: 16px;
     --serif: 'Fraunces', Georgia, serif;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -108,6 +111,12 @@
   .btn-primary { background: var(--accent); color: #FFFFFF; width: 100%; margin-top: 16px; }
   .btn-primary:hover:not(:disabled) { background: var(--accent-deep); }
   .btn-inline { width: auto; margin-top: 0; }
+
+  @keyframes unlockPulse {
+    0% { box-shadow: 0 0 0 0 rgba(124,77,166,0.45); }
+    100% { box-shadow: 0 0 0 18px rgba(124,77,166,0); }
+  }
+  .btn-primary.success { animation: unlockPulse 0.5s ease-out; }
 
   .btn-ghost {
     background: transparent;
@@ -337,11 +346,18 @@
     z-index: 2;
   }
 
+  @keyframes lightboxFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes polaroidPop {
+    from { opacity: 0; transform: scale(0.82) translateY(14px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
   #lightbox {
     position: fixed; inset: 0;
     background: rgba(12,7,18,0.92);
     display: flex; align-items: center; justify-content: center;
     z-index: 100; padding: 30px; cursor: zoom-out;
+    animation: lightboxFade 0.2s ease both;
   }
   .lightbox-polaroid {
     background: #fff;
@@ -352,6 +368,7 @@
     display: flex;
     flex-direction: column;
     cursor: default;
+    animation: polaroidPop 0.3s cubic-bezier(.22,.9,.32,1.18) both;
   }
   .lightbox-photo-inner {
     flex: 1;
@@ -1139,12 +1156,12 @@
     const hash = await sha256(pass);
     $('unlock-btn').disabled = false;
 
-    if (hash === state.passwords.adminHash) {
-      state.role = 'admin';
-      enterMain();
-    } else if (hash === state.passwords.viewHash) {
-      state.role = 'viewer';
-      enterMain();
+    if (hash === state.passwords.adminHash || hash === state.passwords.viewHash) {
+      state.role = (hash === state.passwords.adminHash) ? 'admin' : 'viewer';
+      const btn = $('unlock-btn');
+      btn.textContent = 'Vítejte ✓';
+      btn.classList.add('success');
+      setTimeout(enterMain, 380);
     } else {
       const el = $('error-msg');
       el.textContent = 'Špatné heslo, zkuste to znovu.';
